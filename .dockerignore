@@ -1,0 +1,46 @@
+# Version control
+.git
+.gitignore
+
+# Nix
+result
+result-*
+.direnv
+.envrc
+
+# Python environments and caches
+.venv
+venv
+__pycache__
+**/__pycache__
+*.py[cod]
+*.egg-info
+.pytest_cache
+.ruff_cache
+.mypy_cache
+
+# Generated experiment outputs
+artifacts
+results
+runs
+*.prof
+
+# Models and local caches
+model-cache
+.cache
+models
+checkpoints
+
+# Local configuration / secrets
+.env
+.env.*
+!.env.example
+
+# Editors and OS metadata
+.idea
+.vscode
+.DS_Store
+
+# Local build artifacts
+dist
+build

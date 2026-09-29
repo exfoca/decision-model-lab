@@ -1,0 +1,29 @@
+services:
+  lab:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+      args:
+        DML_SOURCE_REVISION: ${DML_SOURCE_REVISION:-unknown}
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      HF_HOME: ${HF_HOME:-/cache/huggingface}
+      DML_ARTIFACTS_DIR: ${DML_ARTIFACTS_DIR:-/workspace/artifacts}
+    volumes:
+      - .:/workspace
+      - ./model-cache:/cache/huggingface
+    devices:
+      - "nvidia.com/gpu=all"
+
+  quality:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: quality
+      args:
+        DML_SOURCE_REVISION: ${DML_SOURCE_REVISION:-unknown}
+    volumes:
+      - .:/workspace

@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+message: "If you use Decision Model Lab in research or published evaluations, please cite this software."
+title: "Decision Model Lab"
+type: software
+authors:
+  - name: "Orion Impact"
+version: 0.1.0
+license: Apache-2.0
+url: "https://www.orion-impact.com/"

@@ -1,0 +1,11 @@
+# Verdict/OpenJev is currently distributed as a source repository rather than a
+# versioned PyPI release. Keep the source revision synchronized with
+# UPSTREAM_ENGINE_REVISION in decision_model_lab.verdict_runner.
+#
+# The additional direct runtime dependencies are pinned here so installing the
+# candidate does not silently float these packages independently of the lab.
+accelerate==1.15.0
+gliclass==0.1.20
+onnx==1.23.0
+onnxruntime==1.30.0
+rlcd @ git+https://github.com/Heman10x-NGU/Verdict-open-jev.git@30f1556

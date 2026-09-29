@@ -1,0 +1,2 @@
+{"id":"binary-001","context":"The service health endpoint returned HTTP 200 and all dependency checks passed.","question":"Is the service healthy according to the supplied evidence?","decision":{"type":"noul"},"expected":{"label":"yes"},"tags":["binary","smoke"]}
+{"id":"insufficient-001","context":"The report contains no measurement of GPU memory usage.","question":"Is GPU memory usage below 4 GB?","decision":{"type":"choice","options":["yes","no","insufficient_evidence"]},"expected":{"label":"insufficient_evidence"},"tags":["abstention","smoke"]}

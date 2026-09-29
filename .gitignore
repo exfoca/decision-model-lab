@@ -1,0 +1,38 @@
+# Python
+
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.venv/
+venv/
+dist/
+build/
+
+# Experiment outputs
+artifacts/
+results/
+runs/
+*.prof
+
+# Model/data caches
+.cache/
+models/
+checkpoints/
+model-cache/
+
+# Local configuration / secrets
+.env
+.env.*
+!.env.example
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store
+
+# Nix
+result
+result-*
