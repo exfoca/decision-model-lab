@@ -8,7 +8,6 @@ from typer.testing import CliRunner
 
 from decision_model_lab import cli
 
-
 runner = CliRunner()
 
 

@@ -16,9 +16,7 @@ def _case(case_id: str, label: str) -> EvaluationCase:
     )
 
 
-def _result(
-    case_id: str, label: str, probabilities: dict[str, float]
-) -> DecisionResult:
+def _result(case_id: str, label: str, probabilities: dict[str, float]) -> DecisionResult:
     return DecisionResult(
         case_id=case_id,
         label=label,

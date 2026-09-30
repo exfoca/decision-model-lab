@@ -227,9 +227,7 @@ def selective_metrics(
             threshold=best_threshold,
             automated=best_automated,
             errors=best_errors,
-            empirical_error_rate=(
-                best_errors / best_automated if best_automated else None
-            ),
+            empirical_error_rate=(best_errors / best_automated if best_automated else None),
         )
 
     return SelectiveMetrics(evaluated=evaluated, by_error_budget=points)

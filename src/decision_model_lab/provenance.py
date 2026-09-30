@@ -11,6 +11,7 @@ from typing import Any
 
 from pydantic import BaseModel
 
+from decision_model_lab.accelerator import CudaBackend, gguf_cuda_available, gguf_n_gpu_layers
 from decision_model_lab.schema import DecisionResult
 
 
@@ -26,6 +27,9 @@ class RunProvenance(BaseModel):
     torch_cuda_version: str | None = None
     cuda_available: bool | None = None
     cuda_device: str | None = None
+    candidate_cuda_backend: CudaBackend | None = None
+    gguf_cuda_available: bool | None = None
+    gguf_n_gpu_layers: int | None = None
     candidate_runtime_distribution: str | None = None
     candidate_runtime_version: str | None = None
     candidate_runtime_revision: str | None = None
@@ -93,9 +97,7 @@ def _torch_state() -> dict[str, Any]:
     torch_cuda_version = getattr(getattr(torch, "version", None), "cuda", None)
     return {
         "torch_version": str(torch.__version__),
-        "torch_cuda_version": (
-            str(torch_cuda_version) if torch_cuda_version is not None else None
-        ),
+        "torch_cuda_version": (str(torch_cuda_version) if torch_cuda_version is not None else None),
         "cuda_available": cuda_available,
         "cuda_device": cuda_device,
     }
@@ -130,6 +132,7 @@ def collect_run_provenance(
     runner: object,
     results: list[DecisionResult],
     runtime_distribution: str | None,
+    cuda_backend: CudaBackend = "torch",
 ) -> RunProvenance:
     repository_commit, repository_dirty = _repository_state()
     torch_state = _torch_state()
@@ -158,13 +161,14 @@ def collect_run_provenance(
         torch_cuda_version=torch_state["torch_cuda_version"],
         cuda_available=torch_state["cuda_available"],
         cuda_device=torch_state["cuda_device"],
+        candidate_cuda_backend=cuda_backend,
+        gguf_cuda_available=gguf_cuda_available() if cuda_backend == "gguf" else None,
+        gguf_n_gpu_layers=gguf_n_gpu_layers() if cuda_backend == "gguf" else None,
         candidate_runtime_distribution=runtime_distribution,
         candidate_runtime_version=_distribution_version(runtime_distribution),
         candidate_runtime_revision=runtime_revision,
         model_revision=model_revision,
         quantization=str(quantization) if quantization is not None else None,
         container_base_image=_normalized_environment_value("DML_CONTAINER_BASE_IMAGE"),
-        container_source_revision=_normalized_environment_value(
-            "DML_CONTAINER_SOURCE_REVISION"
-        ),
+        container_source_revision=_normalized_environment_value("DML_CONTAINER_SOURCE_REVISION"),
     )

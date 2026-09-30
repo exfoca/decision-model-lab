@@ -1,16 +1,13 @@
-from ctypes import CDLL
-from importlib import import_module
 from os import environ
 from pathlib import Path
-from shutil import which
-from subprocess import STDOUT, CalledProcessError, check_output
-from typing import Annotated, Any
+from typing import Annotated
 
 import typer
 
+from decision_model_lab.accelerator import candidate_cuda_error, runtime_diagnostics
 from decision_model_lab.battery import BatteryError, run_resident_battery
 from decision_model_lab.benchmark import case_diagnostics, run_benchmark, write_report
-from decision_model_lab.candidates import CandidateError, resolve_candidate
+from decision_model_lab.candidates import Candidate, CandidateError, resolve_candidate
 from decision_model_lab.dataset import DatasetError, load_jsonl
 from decision_model_lab.jev_style_runner import JevStyleRunner
 from decision_model_lab.provenance import collect_run_provenance
@@ -48,59 +45,23 @@ def validate_dataset(
     typer.echo(f"tags: {', '.join(tags) if tags else '-'}")
 
 
-def _cuda_available() -> bool:
-    torch: Any = import_module("torch")
-    return bool(torch.cuda.is_available())
-
-
-def _libcuda_available() -> bool:
-    try:
-        CDLL("libcuda.so.1")
-    except OSError:
-        return False
-    return True
-
-
-def _ptxas_diagnostics() -> tuple[str | None, str | None]:
-    path = which("ptxas")
-    if path is None:
-        return None, None
-
-    try:
-        output = check_output([path, "--version"], stderr=STDOUT, text=True)
-    except (CalledProcessError, OSError):
-        return path, None
-
-    version = next(
-        (line.strip() for line in output.splitlines() if "release" in line.lower()),
-        None,
+def _require_candidate_cuda(candidate: Candidate, *, operation: str) -> None:
+    error = candidate_cuda_error(candidate.cuda_backend)
+    if error is None:
+        return
+    typer.echo(
+        f"CUDA is required for {operation} candidate {candidate.name!r}: {error}.",
+        err=True,
     )
-    return path, version
-
-
-def _runtime_diagnostics() -> dict[str, Any]:
-    numpy: Any = import_module("numpy")
-    torch: Any = import_module("torch")
-    cuda_available = bool(torch.cuda.is_available())
-    ptxas_path, ptxas_version = _ptxas_diagnostics()
-    return {
-        "numpy_version": str(numpy.__version__),
-        "libcuda_available": _libcuda_available(),
-        "torch_version": str(torch.__version__),
-        "cuda_available": cuda_available,
-        "torch_cuda_version": str(torch.version.cuda) if torch.version.cuda is not None else None,
-        "cuda_device": torch.cuda.get_device_name(0) if cuda_available else None,
-        "ptxas_path": ptxas_path,
-        "ptxas_version": ptxas_version,
-    }
+    raise typer.Exit(code=2)
 
 
 @jev_style_app.command("doctor")
 def jev_style_doctor() -> None:
     """Inspect binary Python dependencies and CUDA without loading Jev weights."""
     try:
-        diagnostics = _runtime_diagnostics()
-    except (ImportError, OSError) as exc:
+        diagnostics = runtime_diagnostics()
+    except (ImportError, OSError, ValueError) as exc:
         typer.echo(f"runtime diagnostic failed: {exc}", err=True)
         raise typer.Exit(code=2) from exc
 
@@ -110,6 +71,14 @@ def jev_style_doctor() -> None:
     if diagnostics["cuda_available"] and diagnostics["ptxas_path"] is None:
         typer.echo(
             "CUDA is available but ptxas is missing; Triton JIT compilation will fail.",
+            err=True,
+        )
+        raise typer.Exit(code=2)
+
+    if diagnostics["gguf_scorer_path"] and not diagnostics["gguf_cuda_available"]:
+        typer.echo(
+            "jev-score-v2 is installed but libggml-cuda.so.0 is unavailable; "
+            "the GGUF scorer was built without CUDA.",
             err=True,
         )
         raise typer.Exit(code=2)
@@ -129,12 +98,11 @@ def jev_style_smoke(
         ),
     ] = True,
 ) -> None:
-    if require_cuda and not _cuda_available():
-        typer.echo(
-            "CUDA is required for this smoke run but torch.cuda.is_available() is false.",
-            err=True,
-        )
-        raise typer.Exit(code=2)
+    if require_cuda:
+        error = candidate_cuda_error("torch")
+        if error is not None:
+            typer.echo(f"CUDA is required for this smoke run: {error}.", err=True)
+            raise typer.Exit(code=2)
 
     try:
         cases = load_jsonl(dataset)
@@ -201,12 +169,15 @@ def benchmark_battery(
     if not candidates:
         typer.echo("benchmark battery requires at least one --candidate", err=True)
         raise typer.Exit(code=2)
-    if require_cuda and not _cuda_available():
-        typer.echo(
-            "CUDA is required for this benchmark battery but torch.cuda.is_available() is false.",
-            err=True,
-        )
-        raise typer.Exit(code=2)
+    try:
+        candidate_specs = tuple(resolve_candidate(name) for name in candidates)
+    except CandidateError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(code=2) from exc
+
+    if require_cuda:
+        for candidate_spec in candidate_specs:
+            _require_candidate_cuda(candidate_spec, operation="benchmark battery")
 
     try:
         artifacts = run_resident_battery(
@@ -269,12 +240,8 @@ def benchmark_run(
     except (CandidateError, SemanticProfileError, EvaluationProtocolError) as exc:
         typer.echo(str(exc), err=True)
         raise typer.Exit(code=2) from exc
-    if require_cuda and not _cuda_available():
-        typer.echo(
-            "CUDA is required for this benchmark but torch.cuda.is_available() is false.",
-            err=True,
-        )
-        raise typer.Exit(code=2)
+    if require_cuda:
+        _require_candidate_cuda(candidate_spec, operation="benchmark")
 
     try:
         cases = load_jsonl(dataset)
@@ -297,6 +264,7 @@ def benchmark_run(
                 runner=runner,
                 results=report.results,
                 runtime_distribution=candidate_spec.runtime_distribution,
+                cuda_backend=candidate_spec.cuda_backend,
             )
         }
     )
@@ -356,8 +324,7 @@ def benchmark_run(
     typer.echo(f"cold_start_latency_ms: {report.latency.cold_start_ms:.3f}")
     steady_state = report.latency.steady_state_mean_ms
     typer.echo(
-        "steady_state_mean_latency_ms: "
-        + ("-" if steady_state is None else f"{steady_state:.3f}")
+        "steady_state_mean_latency_ms: " + ("-" if steady_state is None else f"{steady_state:.3f}")
     )
 
     typer.echo("\nby decision type:")
@@ -391,9 +358,7 @@ def benchmark_run(
         typer.echo("\nerrors:")
         for row in errors:
             selection_probability = (
-                "-"
-                if row.selection_probability is None
-                else f"{row.selection_probability:.6f}"
+                "-" if row.selection_probability is None else f"{row.selection_probability:.6f}"
             )
             probabilities = ", ".join(
                 f"{label}={probability:.6f}"

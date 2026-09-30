@@ -24,6 +24,8 @@ def test_collect_run_provenance_records_runtime_and_model_evidence(monkeypatch) 
     )
     monkeypatch.setattr(provenance, "_distribution_version", lambda name: "0.3.0")
     monkeypatch.setattr(provenance, "_normalized_environment_value", lambda name: None)
+    monkeypatch.setattr(provenance, "gguf_cuda_available", lambda: True)
+    monkeypatch.setattr(provenance, "gguf_n_gpu_layers", lambda: 999)
 
     result = DecisionResult(
         case_id="case-a",
@@ -37,6 +39,7 @@ def test_collect_run_provenance_records_runtime_and_model_evidence(monkeypatch) 
         runner=DummyRunner(),
         results=[result],
         runtime_distribution="jev-style",
+        cuda_backend="gguf",
     )
 
     assert receipt.repository_commit == "a" * 40
@@ -50,6 +53,9 @@ def test_collect_run_provenance_records_runtime_and_model_evidence(monkeypatch) 
     assert receipt.torch_cuda_version == "13.0"
     assert receipt.cuda_available is True
     assert receipt.cuda_device == "Synthetic GPU"
+    assert receipt.candidate_cuda_backend == "gguf"
+    assert receipt.gguf_cuda_available is True
+    assert receipt.gguf_n_gpu_layers == 999
 
 
 def test_repository_state_returns_none_outside_git_repository(tmp_path) -> None:

@@ -1,0 +1,59 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import os
+import sys
+
+DEFAULT_GPU_LAYERS = 999
+
+
+def _gpu_layers() -> int:
+    raw_value = os.environ.get("DML_GGUF_N_GPU_LAYERS", str(DEFAULT_GPU_LAYERS))
+    try:
+        value = int(raw_value)
+    except ValueError:
+        print("DML_GGUF_N_GPU_LAYERS must be a non-negative integer", file=sys.stderr)
+        raise SystemExit(2)
+    if value < 0:
+        print("DML_GGUF_N_GPU_LAYERS must be a non-negative integer", file=sys.stderr)
+        raise SystemExit(2)
+    return value
+
+
+def _scorer_args(arguments: list[str], *, gpu_layers: int) -> list[str]:
+    normalized: list[str] = []
+    has_model = False
+    index = 0
+
+    while index < len(arguments):
+        argument = arguments[index]
+        if argument == "--ngl":
+            if index + 1 >= len(arguments):
+                print("jev-score-v2 received --ngl without a value", file=sys.stderr)
+                raise SystemExit(2)
+            index += 2
+            continue
+        if argument.startswith("--ngl="):
+            index += 1
+            continue
+
+        if argument == "--model" or argument.startswith("--model="):
+            has_model = True
+        normalized.append(argument)
+        index += 1
+
+    if has_model:
+        normalized.extend(("--ngl", str(gpu_layers)))
+    return normalized
+
+
+def main() -> None:
+    native_bin = os.environ.get(
+        "DML_JEV_SCORE_V2_NATIVE_BIN", "/usr/local/libexec/jev-score-v2"
+    )
+    arguments = _scorer_args(sys.argv[1:], gpu_layers=_gpu_layers())
+    os.execv(native_bin, [native_bin, *arguments])
+
+
+if __name__ == "__main__":
+    main()

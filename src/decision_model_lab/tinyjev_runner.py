@@ -50,7 +50,7 @@ class TinyJevRunner:
         *,
         semantic_profile: str,
         evaluation_protocol: str,
-    ) -> "TinyJevRunner":
+    ) -> TinyJevRunner:
         """Create a fresh experiment runner sharing only the resident model client."""
         return TinyJevRunner(
             model_id=self.model_id,

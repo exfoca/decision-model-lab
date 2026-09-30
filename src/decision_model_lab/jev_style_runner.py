@@ -72,7 +72,7 @@ class JevStyleRunner:
         *,
         semantic_profile: str,
         evaluation_protocol: str,
-    ) -> "JevStyleRunner":
+    ) -> JevStyleRunner:
         """Create a fresh experiment runner sharing only the resident model client."""
         client = self._client_or_load()
         runner = JevStyleRunner(
@@ -191,9 +191,7 @@ def _prefetch_hub_snapshot_files(
             allow_patterns=list(patterns),
         )
         if not snapshot_path:
-            raise JevStyleRunnerError(
-                f"Hugging Face did not return a snapshot path for {repo_id}"
-            )
+            raise JevStyleRunnerError(f"Hugging Face did not return a snapshot path for {repo_id}")
         snapshot_revision = _snapshot_revision(Path(snapshot_path))
         if snapshot_revision != resolved_revision:
             raise JevStyleRunnerError(
@@ -228,10 +226,7 @@ def _build_question(
     if decision.type == "noul":
         return module.noul(case.question), None
     if decision.type == "choice":
-        if (
-            semantic_profile == "native-criteria-v1"
-            and evaluation_protocol == "rule-conditioned"
-        ):
+        if semantic_profile == "native-criteria-v1" and evaluation_protocol == "rule-conditioned":
             criteria, _, source = partition_native_choice_criteria(case)
             if criteria is not None:
                 return module.choice(case.question, criteria), source

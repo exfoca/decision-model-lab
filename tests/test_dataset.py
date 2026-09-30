@@ -79,8 +79,7 @@ def test_benchmark_v2_pt_br_localizes_all_model_visible_definition_text() -> Non
         pt_strings = _definition_strings(pt_case.definitions)
         assert len(en_strings) == len(pt_strings)
         assert all(
-            en_value != pt_value
-            for en_value, pt_value in zip(en_strings, pt_strings, strict=True)
+            en_value != pt_value for en_value, pt_value in zip(en_strings, pt_strings, strict=True)
         )
 
 

@@ -30,6 +30,7 @@ def test_resolve_candidate_returns_jev_style_specification() -> None:
     assert candidate.name == "jev-style"
     assert candidate.model_id == DEFAULT_MODEL_ID
     assert candidate.runtime_distribution == "jev-style"
+    assert candidate.cuda_backend == "torch"
     assert isinstance(candidate.create_runner(), JevStyleRunner)
 
 
@@ -39,6 +40,7 @@ def test_resolve_candidate_returns_jev_style_2b_specification() -> None:
 
     assert candidate.name == "jev-style-2b"
     assert candidate.model_id == MODEL_2B_ID
+    assert candidate.cuda_backend == "torch"
     assert isinstance(runner, JevStyleRunner)
     assert runner.model_id == MODEL_2B_ID
 
@@ -49,6 +51,7 @@ def test_resolve_candidate_returns_jev_style_2b_q4_specification() -> None:
 
     assert candidate.name == "jev-style-2b-q4"
     assert candidate.model_id == MODEL_2B_GGUF_ID
+    assert candidate.cuda_backend == "gguf"
     assert isinstance(runner, JevStyleRunner)
     assert runner.model_id == MODEL_2B_GGUF_ID
     assert runner.quantization == MODEL_2B_Q4_QUANT
@@ -64,6 +67,7 @@ def test_resolve_candidate_returns_jev_style_2b_q8_specification() -> None:
 
     assert candidate.name == "jev-style-2b-q8"
     assert candidate.model_id == MODEL_2B_GGUF_ID
+    assert candidate.cuda_backend == "gguf"
     assert isinstance(runner, JevStyleRunner)
     assert runner.model_id == MODEL_2B_GGUF_ID
     assert runner.quantization == MODEL_2B_Q8_QUANT

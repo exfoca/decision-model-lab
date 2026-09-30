@@ -12,6 +12,7 @@ services:
     environment:
       HF_HOME: ${HF_HOME:-/cache/huggingface}
       DML_ARTIFACTS_DIR: ${DML_ARTIFACTS_DIR:-/workspace/artifacts}
+      DML_GGUF_N_GPU_LAYERS: ${DML_GGUF_N_GPU_LAYERS:-999}
     volumes:
       - .:/workspace
       - ./model-cache:/cache/huggingface

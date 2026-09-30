@@ -108,8 +108,8 @@ Build the full laboratory image:
 docker compose build lab
 ```
 
-Verify that the container can see the CUDA runtime and required toolchain without loading model
-weights:
+Verify that the container can see the CUDA runtime, PyTorch CUDA path and native GGUF CUDA
+backend without loading model weights:
 
 ```bash
 docker compose run --rm lab dml jev-style doctor
@@ -164,9 +164,15 @@ docker compose run --rm lab dml benchmark run datasets/benchmark-v2.jsonl --cand
 docker compose run --rm lab dml benchmark run datasets/benchmark-v2.jsonl --candidate verdict
 ```
 
-By default a benchmark requires CUDA. The CLI also exposes `--allow-cpu` for controlled experiments
-with runtimes that support CPU execution, but CPU and GPU latency measurements must not be treated
-as directly comparable.
+By default a benchmark requires CUDA. The check is candidate-specific: PyTorch-backed candidates
+require `torch.cuda.is_available()`, while GGUF candidates require the native `libggml-cuda` backend
+and a non-zero GPU-layer offload policy. The CLI also exposes `--allow-cpu` for controlled
+experiments with runtimes that support CPU execution, but CPU and GPU latency measurements must not
+be treated as directly comparable.
+
+GGUF runs default to `DML_GGUF_N_GPU_LAYERS=999`, which requests a value high enough to offload all
+model layers supported by the scorer. Set the variable to `0` together with `--allow-cpu` when an
+explicit CPU-only GGUF control run is required.
 
 ### Resident benchmark battery
 
@@ -343,9 +349,9 @@ Current reports use schema version 2 and include:
 - run provenance.
 
 The provenance block records the information available at execution time, including repository
-commit/dirty state, Python/platform identity, Torch/CUDA/GPU state, candidate runtime version,
-resolved model revision when exposed, quantization, container base image and container source
-revision.
+commit/dirty state, Python/platform identity, Torch/CUDA/GPU state, candidate CUDA backend, GGUF
+CUDA availability and GPU-layer policy when applicable, candidate runtime version, resolved model
+revision when exposed, quantization, container base image and container source revision.
 
 This does not make every third-party model repository immutable automatically. It makes the
 resolved execution state explicit where the upstream runtime exposes it. Inputs that are part of
@@ -360,10 +366,19 @@ the laboratory itself are pinned wherever the integration requires a fixed sourc
 The laboratory prefetches the selected weight, `jev_style_decision_gguf.py` and tokenizer assets
 from that same snapshot. The image-owned `jev-score-v2` binary is built from the same Jev-Style
 snapshot against the pinned `llama.cpp` revision
-`441df11f65ea0b6d0c72965aaf70c8241070ddcb`.
+`441df11f65ea0b6d0c72965aaf70c8241070ddcb`. The build explicitly sets
+`LLAMA_CMAKE_FLAGS=-DGGML_CUDA=ON` and fails if `libggml-cuda` is not installed into the runtime
+image.
 
-This keeps the GGUF model assets and native scorer on one explicit revision boundary. Changing
-those revisions requires rebuilding the `lab` image.
+The native scorer remains installed at `/usr/local/libexec/jev-score-v2`. A laboratory-owned
+wrapper is exposed as `/usr/local/bin/jev-score-v2` and through `JEV_SCORE_V2_BIN`; for model
+invocations it normalizes the scorer arguments so `--ngl` always matches
+`${DML_GGUF_N_GPU_LAYERS:-999}`. This makes the laboratory offload policy authoritative even if an
+upstream runtime starts supplying its own `--ngl` default in a later release.
+
+This keeps the GGUF model assets and native scorer on one explicit revision boundary while making
+the acceleration policy observable and configurable. Changing the model/scorer revisions or the
+native acceleration build requires rebuilding the `lab` image.
 
 ### Verdict runtime reproducibility
 

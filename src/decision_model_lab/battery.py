@@ -112,9 +112,7 @@ def _artifact_path(
     quantization = getattr(runner, "quantization", None)
     quantization_suffix = f"-{quantization}" if quantization else ""
     profile_suffix = (
-        ""
-        if regime.semantic_profile == DEFAULT_SEMANTIC_PROFILE
-        else f"-{regime.semantic_profile}"
+        "" if regime.semantic_profile == DEFAULT_SEMANTIC_PROFILE else f"-{regime.semantic_profile}"
     )
     protocol_suffix = (
         ""
@@ -235,6 +233,7 @@ def run_resident_battery(
                                 runner=runner,
                                 results=report.results,
                                 runtime_distribution=candidate.runtime_distribution,
+                                cuda_backend=candidate.cuda_backend,
                             ),
                         }
                     )

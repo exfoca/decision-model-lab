@@ -46,7 +46,9 @@ ENV DEBIAN_FRONTEND=noninteractive \
     UV_PROJECT_ENVIRONMENT=/opt/dml-venv \
     PATH=/opt/dml-venv/bin:${PATH} \
     DML_CONTAINER_BASE_IMAGE=nvidia/cuda:13.0.3-devel-ubuntu24.04 \
-    DML_CONTAINER_SOURCE_REVISION=${DML_SOURCE_REVISION}
+    DML_CONTAINER_SOURCE_REVISION=${DML_SOURCE_REVISION} \
+    DML_GGUF_N_GPU_LAYERS=999 \
+    JEV_SCORE_V2_BIN=/usr/local/bin/jev-score-v2
 
 LABEL org.opencontainers.image.title="Decision Model Lab" \
       org.opencontainers.image.revision="${DML_SOURCE_REVISION}"
@@ -108,17 +110,36 @@ RUN JEV_STYLE_GGUF_REVISION="$(/opt/dml-venv/bin/python -c \
     && git -C /tmp/llama.cpp fetch --depth 1 origin "${JEV_LLAMA_CPP_REVISION}" \
     && git -C /tmp/llama.cpp checkout --detach FETCH_HEAD \
     && cd /tmp/jev-style-gguf \
-    && sh build_jev_score.sh /tmp/llama.cpp \
+    && CUDA_DRIVER_STUB="$(find -L /usr/local/cuda -type f -path '*/stubs/libcuda.so' -print -quit)" \
+    && test -n "${CUDA_DRIVER_STUB}" \
+    && install -d /tmp/cuda-driver-stubs \
+    && ln -s "${CUDA_DRIVER_STUB}" /tmp/cuda-driver-stubs/libcuda.so.1 \
+    && LD_LIBRARY_PATH="/tmp/cuda-driver-stubs${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}" \
+        LLAMA_CMAKE_FLAGS="-DGGML_CUDA=ON -DGGML_NATIVE=OFF" \
+        sh build_jev_score.sh /tmp/llama.cpp \
     && scorer="$(find /tmp/jev-style-gguf /tmp/llama.cpp -type f -name jev-score-v2 -perm /111 -print -quit)" \
     && test -n "${scorer}" \
-    && install -m 0755 "${scorer}" /usr/local/bin/jev-score-v2 \
-    && install -d /usr/local/lib \
+    && cuda_backend="$(find /tmp/llama.cpp/build -type f -name 'libggml-cuda.so*' -print -quit)" \
+    && test -n "${cuda_backend}" \
+    && cuda_backend_dir="$(dirname "${cuda_backend}")" \
+    && install -d /usr/local/lib /usr/local/libexec \
+    && install -m 0755 "${scorer}" /usr/local/libexec/jev-score-v2 \
     && ldd "${scorer}" \
         | awk '$3 ~ "^/tmp/(llama\\.cpp|jev-style-gguf)/" { print $1, $3 }' \
         | while read -r soname library; do install -m 0644 "${library}" "/usr/local/lib/${soname}"; done \
+    && cp -a "${cuda_backend_dir}"/libggml-cuda.so* /usr/local/lib/ \
+    && install -m 0755 /workspace/tools/jev-score-v2-cuda /usr/local/bin/jev-score-v2 \
     && ldconfig \
+    && ldconfig -p | grep -q "libggml-cuda.so" \
+    && installed_cuda_backend="$(find /usr/local/lib -maxdepth 1 -type f -name 'libggml-cuda.so*' -print -quit)" \
+    && test -n "${installed_cuda_backend}" \
+    && ldd "${installed_cuda_backend}" \
+        | awk '/=> not found/ && $1 != "libcuda.so.1" { missing = 1 } END { exit missing }' \
+    && ldd /usr/local/libexec/jev-score-v2 \
+        | awk '/=> not found/ && $1 != "libcuda.so.1" { missing = 1 } END { exit missing }' \
+    && LD_LIBRARY_PATH="/tmp/cuda-driver-stubs${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}" \
+        /usr/local/libexec/jev-score-v2 --help 2>&1 | grep -q -- "--ngl" \
     && command -v jev-score-v2 \
-    && ! ldd /usr/local/bin/jev-score-v2 | grep -q "not found" \
-    && rm -rf /tmp/jev-style-gguf /tmp/llama.cpp
+    && rm -rf /tmp/cuda-driver-stubs /tmp/jev-style-gguf /tmp/llama.cpp
 
 CMD ["dml", "--help"]

@@ -114,18 +114,12 @@ class BenchmarkReport(BaseModel):
     results: list[DecisionResult]
 
 
-def _segment_summary(
-    cases: list[EvaluationCase], results: list[DecisionResult]
-) -> SegmentSummary:
+def _segment_summary(cases: list[EvaluationCase], results: list[DecisionResult]) -> SegmentSummary:
     results_by_id = {result.case_id: result for result in results}
     evaluated = [
-        case
-        for case in cases
-        if case.expected.label is not None and case.id in results_by_id
+        case for case in cases if case.expected.label is not None and case.id in results_by_id
     ]
-    correct = sum(
-        results_by_id[case.id].label == case.expected.label for case in evaluated
-    )
+    correct = sum(results_by_id[case.id].label == case.expected.label for case in evaluated)
     return SegmentSummary(
         case_count=len(evaluated),
         correct=correct,
@@ -146,8 +140,7 @@ def _segmented_metrics(
         for decision_type in decision_types
     }
     by_tag = {
-        tag: _segment_summary([case for case in cases if tag in case.tags], results)
-        for tag in tags
+        tag: _segment_summary([case for case in cases if tag in case.tags], results) for tag in tags
     }
     return by_decision_type, by_tag
 
@@ -220,9 +213,7 @@ def run_benchmark(
             min_ms=min(latencies),
             max_ms=max(latencies),
             cold_start_ms=latencies[0],
-            steady_state_mean_ms=(
-                sum(steady_state) / len(steady_state) if steady_state else None
-            ),
+            steady_state_mean_ms=(sum(steady_state) / len(steady_state) if steady_state else None),
         ),
         case_manifest=_case_manifest(cases),
         results=results,

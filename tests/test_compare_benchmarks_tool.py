@@ -28,9 +28,7 @@ def _result(case_id: str, label: str, latency_ms: float) -> dict[str, object]:
     return {
         "case_id": case_id,
         "label": label,
-        "probabilities": {"yes": 0.8, "no": 0.2}
-        if label == "yes"
-        else {"yes": 0.2, "no": 0.8},
+        "probabilities": {"yes": 0.8, "no": 0.2} if label == "yes" else {"yes": 0.2, "no": 0.8},
         "confidence": 0.8,
         "raw_output": None,
         "latency_ms": latency_ms,
@@ -66,9 +64,7 @@ def _write_report(
         "by_decision_type": {
             "choice": {"case_count": 2, "correct": round(accuracy * 2), "accuracy": accuracy}
         },
-        "by_tag": {
-            "core": {"case_count": 2, "correct": round(accuracy * 2), "accuracy": accuracy}
-        },
+        "by_tag": {"core": {"case_count": 2, "correct": round(accuracy * 2), "accuracy": accuracy}},
         "latency": {
             "total_ms": 12.0,
             "mean_ms": 6.0,

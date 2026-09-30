@@ -125,7 +125,7 @@ def test_definitions_are_included_in_model_visible_state() -> None:
     JevStyleRunner(client=client).run(case)
 
     assert client.calls[0][0] == (
-        'Evidence supplied to the model.\n\n[definitions]\n'
+        "Evidence supplied to the model.\n\n[definitions]\n"
         '{"health":{"healthy":"all dependency checks pass"}}'
     )
 
@@ -186,15 +186,13 @@ def test_native_criteria_v1_falls_back_without_unambiguous_choice_definition_map
         }
     }
     client = FakeClient(output)
-    case = make_case(
-        DecisionSpec(type="choice", options=["yes", "no", "insufficient_evidence"])
-    )
+    case = make_case(DecisionSpec(type="choice", options=["yes", "no", "insufficient_evidence"]))
     case.definitions = {"causal_threshold": {"confirmed": "mechanism observed"}}
 
     result = JevStyleRunner(client=client, semantic_profile="native-criteria-v1").run(case)
 
     assert client.calls[0][0] == (
-        'Evidence supplied to the model.\n\n[definitions]\n'
+        "Evidence supplied to the model.\n\n[definitions]\n"
         '{"causal_threshold":{"confirmed":"mechanism observed"}}'
     )
     assert client.calls[0][1]["decision"]["criteria"] == [
@@ -217,9 +215,7 @@ def test_native_criteria_v1_closed_book_does_not_leak_definition_criteria() -> N
     }
     client = FakeClient(output)
     case = make_case(DecisionSpec(type="choice", options=["normal", "degraded"]))
-    case.definitions = {
-        "impact_levels": {"normal": "inside SLO", "degraded": "outside SLO"}
-    }
+    case.definitions = {"impact_levels": {"normal": "inside SLO", "degraded": "outside SLO"}}
 
     result = JevStyleRunner(
         client=client,

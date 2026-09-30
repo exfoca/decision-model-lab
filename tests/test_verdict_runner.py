@@ -75,9 +75,7 @@ def test_choice_reserves_canonical_insufficient_evidence_for_upstream_abstention
         calibration_status="calibrated_for_scope",
     )
     client = FakeClient(result)
-    case = make_case(
-        DecisionSpec(type="choice", options=["yes", "no", "insufficient_evidence"])
-    )
+    case = make_case(DecisionSpec(type="choice", options=["yes", "no", "insufficient_evidence"]))
 
     normalized = VerdictRunner(client=client, runtime=FakeRuntime()).run(case)
 
@@ -142,9 +140,7 @@ def test_noul_maps_true_false_and_abstention_to_canonical_labels() -> None:
     assert normalized.probabilities == pytest.approx(
         {"yes": 0.70, "no": 0.20, "insufficient_evidence": 0.10}
     )
-    assert normalized.metadata["p_true_given_sufficient_evidence"] == pytest.approx(
-        0.7777777778
-    )
+    assert normalized.metadata["p_true_given_sufficient_evidence"] == pytest.approx(0.7777777778)
     assert normalized.metadata["p_insufficient_evidence"] == pytest.approx(0.10)
 
     _, queries = client.calls[0]

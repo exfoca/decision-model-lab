@@ -203,10 +203,14 @@ def test_run_benchmark_segments_accuracy_by_decision_type_and_tag() -> None:
     )
 
     assert report.by_decision_type["noul"].model_dump() == {
-        "case_count": 1, "correct": 1, "accuracy": 1.0
+        "case_count": 1,
+        "correct": 1,
+        "accuracy": 1.0,
     }
     assert report.by_decision_type["choice"].model_dump() == {
-        "case_count": 2, "correct": 1, "accuracy": 0.5
+        "case_count": 2,
+        "correct": 1,
+        "accuracy": 0.5,
     }
     assert report.by_tag["multiclass"].accuracy == 0.5
     assert report.by_tag["direct-evidence"].accuracy == 1.0

@@ -107,24 +107,20 @@ def test_score_maps_laya_probability_indices_back_to_canonical_labels() -> None:
 
 
 def test_definitions_are_included_in_model_visible_state() -> None:
-    client = FakeClient(
-        {"answers": {"decision": {"type": "noul", "noul": 0.8, "confidence": 0.8}}}
-    )
+    client = FakeClient({"answers": {"decision": {"type": "noul", "noul": 0.8, "confidence": 0.8}}})
     case = make_case(DecisionSpec(type="noul"))
     case.definitions = {"health": {"healthy": "all dependency checks pass"}}
 
     LayaRunner(client=client).run(case)
 
     assert client.calls[0][0] == (
-        'Evidence supplied to the model.\n\n[definitions]\n'
+        "Evidence supplied to the model.\n\n[definitions]\n"
         '{"health":{"healthy":"all dependency checks pass"}}'
     )
 
 
 def test_optimized_v1_semantic_profile_is_used_and_recorded() -> None:
-    client = FakeClient(
-        {"answers": {"decision": {"type": "noul", "noul": 0.8, "confidence": 0.8}}}
-    )
+    client = FakeClient({"answers": {"decision": {"type": "noul", "noul": 0.8, "confidence": 0.8}}})
     case = make_case(DecisionSpec(type="noul"))
     case.definitions = {"health": {"healthy": "all dependency checks pass"}}
 

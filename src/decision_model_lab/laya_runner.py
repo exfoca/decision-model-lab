@@ -50,7 +50,7 @@ class LayaRunner:
         *,
         semantic_profile: str,
         evaluation_protocol: str,
-    ) -> "LayaRunner":
+    ) -> LayaRunner:
         """Create a fresh experiment runner sharing only the resident model client."""
         return LayaRunner(
             model_id=self.model_id,

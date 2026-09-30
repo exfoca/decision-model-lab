@@ -59,7 +59,7 @@ class VerdictRunner:
         *,
         semantic_profile: str,
         evaluation_protocol: str,
-    ) -> "VerdictRunner":
+    ) -> VerdictRunner:
         """Create a fresh experiment runner sharing only the resident runtime and client."""
         self.prepare()
         return VerdictRunner(

@@ -40,7 +40,7 @@ def test_baseline_definitions_preserve_established_representation_exactly() -> N
     state = render_case_state(case)
 
     assert state == (
-        'Observed latency is 400 ms.\n\n[definitions]\n'
+        "Observed latency is 400 ms.\n\n[definitions]\n"
         '{"severity":{"degraded":"> 2x baseline","normal":"<= 2x baseline"},'
         '"threshold_ms":400}'
     )
@@ -94,9 +94,7 @@ def test_native_criteria_v1_moves_exact_choice_definition_map_out_of_state() -> 
 
 
 def test_native_criteria_v1_falls_back_to_baseline_without_exact_option_map() -> None:
-    case = make_case(
-        definitions={"severity": {"mild": "inside SLO", "severe": "outside SLO"}}
-    )
+    case = make_case(definitions={"severity": {"mild": "inside SLO", "severe": "outside SLO"}})
 
     criteria, residual, source = partition_native_choice_criteria(case)
 

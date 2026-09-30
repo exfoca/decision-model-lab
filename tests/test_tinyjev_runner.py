@@ -43,9 +43,7 @@ def test_noul_is_normalized_from_states_response() -> None:
     assert result.metadata["model_revision"] == "tinyjev-snapshot"
     assert client.calls[0] == {
         "state": "Evidence supplied to the model.",
-        "questions": {
-            "decision": {"type": "noul", "instructions": "What should the decision be?"}
-        },
+        "questions": {"decision": {"type": "noul", "instructions": "What should the decision be?"}},
     }
 
 
@@ -118,7 +116,7 @@ def test_definitions_are_included_in_model_visible_state() -> None:
     TinyJevRunner(client=client).run(case)
 
     assert client.calls[0]["state"] == (
-        'Evidence supplied to the model.\n\n[definitions]\n'
+        "Evidence supplied to the model.\n\n[definitions]\n"
         '{"health":{"healthy":"all dependency checks pass"}}'
     )
 

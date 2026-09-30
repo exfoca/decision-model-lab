@@ -4,6 +4,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from functools import partial
 
+from decision_model_lab.accelerator import CudaBackend
 from decision_model_lab.benchmark import DecisionRunner
 from decision_model_lab.jev_style_runner import (
     DEFAULT_MODEL_ID,
@@ -45,6 +46,7 @@ class Candidate:
     model_id: str
     runner_factory: Callable[..., DecisionRunner]
     runtime_distribution: str
+    cuda_backend: CudaBackend = "torch"
     semantic_profiles: tuple[SemanticProfile, ...] = ("baseline", "optimized-v1")
 
     def create_runner(
@@ -92,6 +94,7 @@ _CANDIDATES: dict[str, Candidate] = {
             support_patterns=(MODEL_2B_GGUF_TOKENIZER_PATTERN,),
         ),
         runtime_distribution="jev-style",
+        cuda_backend="gguf",
         semantic_profiles=SEMANTIC_PROFILES,
     ),
     "jev-style-2b-q8": Candidate(
@@ -107,6 +110,7 @@ _CANDIDATES: dict[str, Candidate] = {
             support_patterns=(MODEL_2B_GGUF_TOKENIZER_PATTERN,),
         ),
         runtime_distribution="jev-style",
+        cuda_backend="gguf",
         semantic_profiles=SEMANTIC_PROFILES,
     ),
     "laya": Candidate(

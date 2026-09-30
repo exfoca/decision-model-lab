@@ -45,9 +45,7 @@ KNOWN_METRICS: dict[str, MetricSpec] = {
     "calibration.brier_score": MetricSpec(
         "calibration.brier_score", direction="lower", unit="number"
     ),
-    "calibration.log_loss": MetricSpec(
-        "calibration.log_loss", direction="lower", unit="number"
-    ),
+    "calibration.log_loss": MetricSpec("calibration.log_loss", direction="lower", unit="number"),
     "calibration.expected_calibration_error": MetricSpec(
         "calibration.expected_calibration_error", direction="lower", unit="number"
     ),
@@ -61,9 +59,7 @@ KNOWN_METRICS: dict[str, MetricSpec] = {
         "selective.by_error_budget.10%.coverage", direction="higher", unit="ratio"
     ),
     "latency.mean_ms": MetricSpec("latency.mean_ms", direction="lower", unit="ms"),
-    "latency.cold_start_ms": MetricSpec(
-        "latency.cold_start_ms", direction="lower", unit="ms"
-    ),
+    "latency.cold_start_ms": MetricSpec("latency.cold_start_ms", direction="lower", unit="ms"),
     "latency.steady_state_mean_ms": MetricSpec(
         "latency.steady_state_mean_ms", direction="lower", unit="ms"
     ),
@@ -436,8 +432,7 @@ def load_runs(paths: Sequence[Path], *, dataset_root: Path | None = None) -> lis
             manifest = loaded_manifest
             if manifest:
                 warnings.append(
-                    "legacy artifact: case manifest reconstructed from "
-                    + str(dataset_path)
+                    "legacy artifact: case manifest reconstructed from " + str(dataset_path)
                 )
             else:
                 warnings.append(
@@ -451,9 +446,7 @@ def load_runs(paths: Sequence[Path], *, dataset_root: Path | None = None) -> lis
 
         missing_results = sorted(set(manifest) - set(results))
         if missing_results:
-            warnings.append(
-                f"{len(missing_results)} manifest case(s) have no persisted result"
-            )
+            warnings.append(f"{len(missing_results)} manifest case(s) have no persisted result")
 
         schema_version_raw = payload.get("schema_version")
         schema_version = schema_version_raw if isinstance(schema_version_raw, int) else None
@@ -494,9 +487,7 @@ def _resolve_baseline(runs: Sequence[RunArtifact], selector: str | None) -> RunA
         if 1 <= index <= len(runs):
             return runs[index - 1]
     matches = [
-        run
-        for run in runs
-        if selector in {run.run_id, run.label, run.candidate, run.model_id}
+        run for run in runs if selector in {run.run_id, run.label, run.candidate, run.model_id}
     ]
     if len(matches) == 1:
         return matches[0]
@@ -533,9 +524,7 @@ def validate_compatibility(
     for run in runs:
         warnings.extend(f"{run.label}: {warning}" for warning in run.warnings)
     if case_policy == "intersection" and any(case_ids != aligned for case_ids in result_sets):
-        warnings.append(
-            "intersection policy discarded cases not present in every report"
-        )
+        warnings.append("intersection policy discarded cases not present in every report")
 
     manifests_available = all(run.case_manifest for run in runs)
     for case_id in sorted(aligned):
@@ -624,8 +613,7 @@ def _metric_specs(
         overrides[path] = "lower"
 
     if any(
-        _get_path(run.payload, "latency.steady_state_mean_ms") not in (None, 0.0)
-        for run in runs
+        _get_path(run.payload, "latency.steady_state_mean_ms") not in (None, 0.0) for run in runs
     ):
         discovered.add("derived.throughput_cases_s")
         if any(_get_path(run.payload, "classification.accuracy") is not None for run in runs):
@@ -886,14 +874,10 @@ def compare_cases(
                 top1_agreement=(compared - changed) / compared if compared else 0.0,
                 probability_compared=probability_compared,
                 mean_total_variation=(
-                    total_variation_sum / probability_compared
-                    if probability_compared
-                    else None
+                    total_variation_sum / probability_compared if probability_compared else None
                 ),
                 max_abs_probability_delta=max_probability_delta,
-                mcnemar_exact_p=(
-                    _mcnemar_exact_p(left_only, right_only) if evaluated else None
-                ),
+                mcnemar_exact_p=(_mcnemar_exact_p(left_only, right_only) if evaluated else None),
             )
         )
 
@@ -917,9 +901,7 @@ def build_comparison(
     )
     metrics = compare_metrics(runs, specs, baseline)
     segments = compare_segments(runs)
-    case_summary, pairwise, cases = compare_cases(
-        runs, compatibility, include_cases=include_cases
-    )
+    case_summary, pairwise, cases = compare_cases(runs, compatibility, include_cases=include_cases)
 
     return ComparisonReport(
         inputs=[
@@ -1005,10 +987,7 @@ def _markdown_escape(value: Any) -> str:
 def _markdown_table(headers: Sequence[str], rows: Sequence[Sequence[Any]]) -> str:
     head = "| " + " | ".join(_markdown_escape(item) for item in headers) + " |"
     sep = "|" + "|".join("---" for _ in headers) + "|"
-    body = [
-        "| " + " | ".join(_markdown_escape(item) for item in row) + " |"
-        for row in rows
-    ]
+    body = ["| " + " | ".join(_markdown_escape(item) for item in row) + " |" for row in rows]
     return "\n".join([head, sep, *body])
 
 
@@ -1029,9 +1008,7 @@ def render_markdown(report: ComparisonReport) -> str:
         [
             "## Inputs",
             "",
-            _markdown_table(
-                ["run", "label", "candidate", "model", "dataset"], input_rows
-            ),
+            _markdown_table(["run", "label", "candidate", "model", "dataset"], input_rows),
             "",
             "## Compatibility",
             "",
@@ -1317,9 +1294,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 2
 
     if args.format == "json":
-        rendered = json.dumps(
-            report.to_dict(), indent=2, ensure_ascii=False, sort_keys=True
-        ) + "\n"
+        rendered = json.dumps(report.to_dict(), indent=2, ensure_ascii=False, sort_keys=True) + "\n"
     elif args.format == "markdown":
         rendered = render_markdown(report)
     else:
