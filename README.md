@@ -3,6 +3,9 @@
 Decision Model Lab is a reproducible experimental harness for evaluating small, local decision
 models under one model-independent contract.
 
+See the [Benchmark v3 technical report](reports/benchmark-v3.md) for the latest benchmark
+methodology, results and cross-model analysis.
+
 The project exists to answer empirical questions about structured decision systems: decision
 quality, calibration, abstention behavior, semantic sensitivity, stability, latency and
 cross-model trade-offs. It is maintained by Orion Impact as an isolated laboratory and has no
