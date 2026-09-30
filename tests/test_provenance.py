@@ -57,3 +57,12 @@ def test_repository_state_returns_none_outside_git_repository(tmp_path) -> None:
 
     assert commit is None
     assert dirty is None
+
+
+def test_repository_state_resolves_default_root_at_call_time(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    commit, dirty = provenance._repository_state()
+
+    assert commit is None
+    assert dirty is None

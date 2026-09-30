@@ -23,7 +23,7 @@ jobs:
       - name: Scan reachable Git history for secrets
         run: |
           docker run --rm \
-            -v "$PWD:/repo" \
+            -v "$PWD:/repo:ro" \
             -w /repo \
             ghcr.io/gitleaks/gitleaks:v8.30.1 \
             git --redact --no-banner .

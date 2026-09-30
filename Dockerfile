@@ -1,4 +1,41 @@
-FROM nvidia/cuda:13.0.3-devel-ubuntu24.04 AS base
+FROM python:3.12-slim-bookworm AS quality
+
+ARG DML_SOURCE_REVISION=unknown
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    UV_PROJECT_ENVIRONMENT=/opt/dml-venv \
+    PATH=/opt/dml-venv/bin:${PATH} \
+    DML_CONTAINER_BASE_IMAGE=python:3.12-slim-bookworm \
+    DML_CONTAINER_SOURCE_REVISION=${DML_SOURCE_REVISION}
+
+LABEL org.opencontainers.image.title="Decision Model Lab quality" \
+      org.opencontainers.image.revision="${DML_SOURCE_REVISION}"
+
+WORKDIR /workspace
+
+RUN apt-get update \
+    && apt-get install --no-install-recommends -y \
+        ca-certificates \
+        git \
+    && rm -rf /var/lib/apt/lists/* \
+    && python -m pip install --no-cache-dir "uv==0.10.0"
+
+COPY pyproject.toml uv.lock README.md ./
+COPY src ./src
+
+RUN uv sync --frozen --extra dev
+
+COPY datasets ./datasets
+COPY configs ./configs
+COPY tests ./tests
+COPY tools ./tools
+
+CMD ["pytest"]
+
+FROM nvidia/cuda:13.0.3-devel-ubuntu24.04 AS runtime-base
 
 ARG DML_SOURCE_REVISION=unknown
 
@@ -29,7 +66,7 @@ RUN apt-get update \
         python3-pip \
         python3-venv \
     && rm -rf /var/lib/apt/lists/* \
-    && python3.12 -m pip install --break-system-packages --no-cache-dir "uv>=0.8,<1"
+    && python3.12 -m pip install --break-system-packages --no-cache-dir "uv==0.10.0"
 
 COPY pyproject.toml uv.lock README.md ./
 COPY src ./src
@@ -41,11 +78,7 @@ COPY configs ./configs
 COPY tests ./tests
 COPY tools ./tools
 
-FROM base AS quality
-
-CMD ["pytest"]
-
-FROM base AS runtime
+FROM runtime-base AS runtime
 
 ARG JEV_LLAMA_CPP_REVISION=441df11f65ea0b6d0c72965aaf70c8241070ddcb
 

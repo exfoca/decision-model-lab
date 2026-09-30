@@ -24,7 +24,7 @@ jobs:
 
       - name: Run repository gates
         run: |
-          docker compose run --rm quality sh -lc '
+          docker compose run --rm quality sh -c '
             set -eu
             uv lock --check
             ruff check .

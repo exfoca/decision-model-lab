@@ -43,6 +43,8 @@ dml = "decision_model_lab.cli:app"
 
 [project.urls]
 Homepage = "https://www.orion-impact.com/"
+Repository = "https://github.com/orionimpactbr/decision-model-lab"
+Issues = "https://github.com/orionimpactbr/decision-model-lab/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/decision_model_lab"]

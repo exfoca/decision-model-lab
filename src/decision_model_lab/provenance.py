@@ -35,11 +35,13 @@ class RunProvenance(BaseModel):
     container_source_revision: str | None = None
 
 
-def _repository_state(root: Path = Path.cwd()) -> tuple[str | None, bool | None]:
+def _repository_state(root: Path | None = None) -> tuple[str | None, bool | None]:
+    repository_root = root if root is not None else Path.cwd()
+
     try:
         commit_process = run(
             ["git", "rev-parse", "HEAD"],
-            cwd=root,
+            cwd=repository_root,
             check=False,
             stdout=PIPE,
             stderr=DEVNULL,
@@ -56,7 +58,7 @@ def _repository_state(root: Path = Path.cwd()) -> tuple[str | None, bool | None]
     try:
         status_process = run(
             ["git", "status", "--porcelain", "--untracked-files=normal"],
-            cwd=root,
+            cwd=repository_root,
             check=False,
             stdout=PIPE,
             stderr=DEVNULL,
