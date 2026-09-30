@@ -63,6 +63,36 @@ class JevStyleRunner:
         )
         self._client = client
 
+    def prepare(self) -> None:
+        """Load the provider client without executing an evaluation case."""
+        self._client_or_load()
+
+    def fork_for_experiment(
+        self,
+        *,
+        semantic_profile: str,
+        evaluation_protocol: str,
+    ) -> "JevStyleRunner":
+        """Create a fresh experiment runner sharing only the resident model client."""
+        client = self._client_or_load()
+        runner = JevStyleRunner(
+            model_id=self.model_id,
+            client=client,
+            semantic_profile=semantic_profile,
+            evaluation_protocol=evaluation_protocol,
+            quantization=self.quantization,
+            revision=self._resolved_revision or self.revision,
+            model_filename=self.model_filename,
+            support_filenames=self.support_filenames,
+            support_patterns=self.support_patterns,
+        )
+        runner._resolved_revision = self._resolved_revision
+        return runner
+
+    def release(self) -> None:
+        """Drop this runner's reference to the resident provider client."""
+        self._client = None
+
     def _client_or_load(self) -> Any:
         if self._client is None:
             module = import_module("jev_style")

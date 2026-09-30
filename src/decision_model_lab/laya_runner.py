@@ -41,6 +41,28 @@ class LayaRunner:
         )
         self._client = client
 
+    def prepare(self) -> None:
+        """Load the provider client without executing an evaluation case."""
+        self._client_or_load()
+
+    def fork_for_experiment(
+        self,
+        *,
+        semantic_profile: str,
+        evaluation_protocol: str,
+    ) -> "LayaRunner":
+        """Create a fresh experiment runner sharing only the resident model client."""
+        return LayaRunner(
+            model_id=self.model_id,
+            client=self._client_or_load(),
+            semantic_profile=semantic_profile,
+            evaluation_protocol=evaluation_protocol,
+        )
+
+    def release(self) -> None:
+        """Drop this runner's reference to the resident provider client."""
+        self._client = None
+
     def _client_or_load(self) -> Any:
         if self._client is None:
             module = import_module("laya")

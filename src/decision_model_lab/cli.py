@@ -8,6 +8,7 @@ from typing import Annotated, Any
 
 import typer
 
+from decision_model_lab.battery import BatteryError, run_resident_battery
 from decision_model_lab.benchmark import case_diagnostics, run_benchmark, write_report
 from decision_model_lab.candidates import CandidateError, resolve_candidate
 from decision_model_lab.dataset import DatasetError, load_jsonl
@@ -148,6 +149,82 @@ def jev_style_smoke(
 
     result = JevStyleRunner().run(case)
     typer.echo(result.model_dump_json(indent=2))
+
+
+@benchmark_app.command("battery")
+def benchmark_battery(
+    datasets: Annotated[
+        list[Path] | None,
+        typer.Option(
+            "--dataset",
+            exists=True,
+            dir_okay=False,
+            readable=True,
+            help=(
+                "Dataset to execute. Repeat --dataset to keep each selected model resident "
+                "across multiple datasets."
+            ),
+        ),
+    ] = None,
+    candidates: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--candidate",
+            help=(
+                "Registered candidate to execute. Repeat --candidate to run multiple candidates "
+                "sequentially, loading each only once."
+            ),
+        ),
+    ] = None,
+    verify_state_isolation: Annotated[
+        bool,
+        typer.Option(
+            "--verify-state-isolation/--skip-state-isolation",
+            help=(
+                "Probe the resident runtime after every benchmark run and fail before publishing "
+                "that candidate's artifacts if its normalized decision drifts."
+            ),
+        ),
+    ] = True,
+    require_cuda: Annotated[
+        bool,
+        typer.Option(
+            "--require-cuda/--allow-cpu",
+            help="Fail before model loading when CUDA is unavailable.",
+        ),
+    ] = True,
+) -> None:
+    """Run every non-redundant regime for explicitly selected datasets and candidates."""
+    if not datasets:
+        typer.echo("benchmark battery requires at least one --dataset", err=True)
+        raise typer.Exit(code=2)
+    if not candidates:
+        typer.echo("benchmark battery requires at least one --candidate", err=True)
+        raise typer.Exit(code=2)
+    if require_cuda and not _cuda_available():
+        typer.echo(
+            "CUDA is required for this benchmark battery but torch.cuda.is_available() is false.",
+            err=True,
+        )
+        raise typer.Exit(code=2)
+
+    try:
+        artifacts = run_resident_battery(
+            candidate_names=tuple(candidates),
+            datasets=tuple(datasets),
+            verify_state_isolation=verify_state_isolation,
+            progress=lambda message: typer.echo(f"[battery] {message}"),
+        )
+    except (BatteryError, CandidateError, DatasetError) as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(code=2) from exc
+
+    typer.echo(
+        f"battery complete: candidates={len(candidates)} datasets={len(datasets)} "
+        f"runs={len(artifacts)}"
+    )
+    for artifact in artifacts:
+        typer.echo(f"artifact: {artifact.path}")
 
 
 @benchmark_app.command("run")

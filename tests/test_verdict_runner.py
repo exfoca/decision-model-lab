@@ -218,3 +218,33 @@ def test_semantic_profile_and_protocol_are_shared_with_existing_candidates() -> 
     assert normalized.metadata["semantic_profile"] == "optimized-v1"
     assert normalized.metadata["evaluation_protocol"] == "rule-conditioned"
     assert normalized.metadata["model_id"] == DEFAULT_MODEL_ID
+
+
+def test_resident_experiment_fork_reuses_loaded_runtime_and_client() -> None:
+    result = SimpleNamespace(
+        selected_outcome="true",
+        probabilities={"true": 0.8, "false": 0.2},
+        p_true_given_sufficient_evidence=0.8,
+        p_insufficient_evidence=0.0,
+        calibration_status="calibrated_for_scope",
+    )
+    client = FakeClient(result)
+    runtime = FakeRuntime()
+    owner = VerdictRunner(client=client, runtime=runtime)
+
+    fork = owner.fork_for_experiment(
+        semantic_profile="optimized-v1",
+        evaluation_protocol="closed-book",
+    )
+
+    assert fork is not owner
+    assert fork._client is client
+    assert fork._runtime is runtime
+    assert fork.semantic_profile == "optimized-v1"
+    assert fork.evaluation_protocol == "closed-book"
+
+    owner.release()
+    assert owner._client is None
+    assert owner._runtime is None
+    assert fork._client is client
+    assert fork._runtime is runtime

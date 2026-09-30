@@ -23,6 +23,9 @@ Run model inference and benchmark measurements through the `lab` service. Do not
 - Keep candidate adapters thin. Candidate-specific provider responses belong in `raw_output` or result metadata, not in the laboratory contract.
 - Never expose `expected`, `tags` or evaluation-only `metadata` to a candidate.
 - Treat semantic profiles and evaluation protocols as explicit experimental variables.
+- Resident benchmark paths may share only the loaded provider runtime/client. They must create a
+  fresh runner per experimental regime, never pass earlier cases or results into later decisions,
+  and retain an explicit state-isolation guard.
 - Preserve dataset IDs and semantics across aligned language variants. When an EN/pt-BR pair exists, changes to expected labels, decision types, options or tags must remain aligned unless the divergence is intentional and documented.
 - Do not commit generated benchmark artifacts, model weights, checkpoints, local caches, credentials or machine-specific paths.
 - Pin source-only upstream runtimes and native build inputs to immutable revisions when they participate in a benchmark runtime.
@@ -37,7 +40,9 @@ A new candidate should:
 3. preserve the untouched upstream response when feasible;
 4. normalize labels and probabilities into `DecisionResult`;
 5. declare its runtime distribution in the candidate registry so benchmark provenance can record the installed runtime version;
-6. add contract tests that do not require downloading model weights.
+6. add contract tests that do not require downloading model weights;
+7. implement the resident-runner lifecycle (`prepare`, `fork_for_experiment`, `release`) when the
+   candidate is expected to participate in `benchmark battery`.
 
 ## Dataset changes
 

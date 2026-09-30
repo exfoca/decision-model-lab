@@ -387,3 +387,25 @@ def test_2b_q8_prefetches_exact_weight_from_pinned_snapshot(
     assert result.metadata["quantization"] == "Q8_0"
     assert result.metadata["model_filename"] == MODEL_2B_Q8_FILENAME
     assert result.metadata["model_revision"] == "abc123"
+
+
+def test_resident_experiment_fork_reuses_loaded_client() -> None:
+    owner = JevStyleRunner()
+    owner.prepare()
+
+    fork = owner.fork_for_experiment(
+        semantic_profile="optimized-v1",
+        evaluation_protocol="closed-book",
+    )
+
+    module = sys.modules["jev_style"]
+    assert len(module.JevStyle.calls) == 1
+    assert fork is not owner
+    assert fork._client is owner._client
+    assert fork.semantic_profile == "optimized-v1"
+    assert fork.evaluation_protocol == "closed-book"
+
+    client = fork._client
+    owner.release()
+    assert owner._client is None
+    assert fork._client is client

@@ -147,3 +147,22 @@ def test_closed_book_protocol_hides_definitions_and_is_recorded() -> None:
 
     assert client.calls[0][0] == "Evidence supplied to the model."
     assert result.metadata["evaluation_protocol"] == "closed-book"
+
+
+def test_resident_experiment_fork_reuses_loaded_client() -> None:
+    client = FakeClient({"answers": {"decision": {"type": "noul", "noul": 0.8}}})
+    owner = LayaRunner(client=client)
+
+    fork = owner.fork_for_experiment(
+        semantic_profile="optimized-v1",
+        evaluation_protocol="closed-book",
+    )
+
+    assert fork is not owner
+    assert fork._client is client
+    assert fork.semantic_profile == "optimized-v1"
+    assert fork.evaluation_protocol == "closed-book"
+
+    owner.release()
+    assert owner._client is None
+    assert fork._client is client

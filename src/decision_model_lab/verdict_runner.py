@@ -49,6 +49,33 @@ class VerdictRunner:
         self._client = client
         self._runtime = runtime
 
+    def prepare(self) -> None:
+        """Load the provider runtime and model client without executing an evaluation case."""
+        self._runtime_or_load()
+        self._client_or_load()
+
+    def fork_for_experiment(
+        self,
+        *,
+        semantic_profile: str,
+        evaluation_protocol: str,
+    ) -> "VerdictRunner":
+        """Create a fresh experiment runner sharing only the resident runtime and client."""
+        self.prepare()
+        return VerdictRunner(
+            model_id=self.model_id,
+            client=self._client,
+            runtime=self._runtime,
+            device=self.device,
+            semantic_profile=semantic_profile,
+            evaluation_protocol=evaluation_protocol,
+        )
+
+    def release(self) -> None:
+        """Drop this runner's references to the resident provider runtime and client."""
+        self._client = None
+        self._runtime = None
+
     def _runtime_or_load(self) -> Any:
         if self._runtime is None:
             try:

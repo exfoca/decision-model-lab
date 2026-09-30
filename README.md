@@ -58,8 +58,11 @@ Two Docker targets are exposed through Compose:
 - `quality`: CPU-only repository gates; it does not install candidate model runtimes;
 - `lab`: the full CUDA/runtime image used for inference and benchmark measurements.
 
-Run different candidates in separate container processes when comparing latency or resource use so
-model residency and GPU state do not contaminate cross-model measurements.
+For strict cold-process latency or resource comparisons, run different candidates in separate
+container processes so model residency and GPU state do not contaminate cross-model measurements.
+The resident battery described below intentionally keeps one selected candidate loaded across its
+requested matrix; its latency results are warm-resident measurements rather than process cold-start
+measurements.
 
 ## Requirements
 
@@ -164,6 +167,42 @@ docker compose run --rm lab dml benchmark run datasets/benchmark-v2.jsonl --cand
 By default a benchmark requires CUDA. The CLI also exposes `--allow-cpu` for controlled experiments
 with runtimes that support CPU execution, but CPU and GPU latency measurements must not be treated
 as directly comparable.
+
+### Resident benchmark battery
+
+`benchmark battery` does not select models or datasets implicitly. Supply every candidate and
+dataset explicitly; both options are repeatable. The harness loads one candidate once, executes all
+semantically distinct benchmark regimes supported by that candidate across every selected dataset,
+then releases it before loading the next candidate.
+
+For example, run benchmark v3 in both languages against three selected candidates:
+
+```bash
+docker compose run --rm lab dml benchmark battery \
+  --dataset datasets/benchmark-v3.jsonl \
+  --dataset datasets/benchmark-v3-pt-br.jsonl \
+  --candidate jev-style \
+  --candidate jev-style-2b-q8 \
+  --candidate verdict
+```
+
+The regime matrix is derived from the candidate registry rather than hard-coded model names. Every
+supported semantic profile runs under `rule-conditioned`, and `closed-book` runs once because its
+model-visible evidence is independent of semantic-profile rendering. A Jev-Style candidate that
+supports `baseline`, `optimized-v1` and `native-criteria-v1` therefore produces four runs per
+dataset; a candidate supporting only `baseline` and `optimized-v1` produces three.
+
+Each dataset/regime pair receives a fresh runner and freshly loaded `EvaluationCase` objects. Only
+the opaque upstream model/runtime client is kept resident. No previous case, output or normalized
+result is supplied to a later decision. By default a synthetic state-isolation probe runs before
+the matrix and after every benchmark run; if its normalized decision drifts, that candidate's
+pending artifacts are not published. This guard detects obvious session-state leakage but cannot
+prove the absence of undocumented internal state in an upstream runtime.
+
+The initial probe also warms the resident runtime. Battery reports therefore record
+`execution_mode=resident-battery` and `runtime_warmup=true`, and their filenames receive a
+`-resident-battery` suffix. Use standalone `benchmark run` processes for strict process cold-start
+latency comparisons.
 
 ## Benchmark datasets
 

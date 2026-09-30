@@ -100,6 +100,8 @@ class BenchmarkReport(BaseModel):
     model_id: str
     semantic_profile: SemanticProfile
     evaluation_protocol: EvaluationProtocol
+    execution_mode: str = "standalone"
+    runtime_warmup: bool = False
     case_count: int = Field(gt=0)
     classification: dict[str, int | float]
     calibration: dict[str, int | float]

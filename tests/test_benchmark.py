@@ -57,6 +57,8 @@ def test_run_benchmark_executes_all_cases_and_computes_metrics() -> None:
     assert report.case_manifest[0].expected_label == "yes"
     assert report.semantic_profile == "baseline"
     assert report.evaluation_protocol == "rule-conditioned"
+    assert report.execution_mode == "standalone"
+    assert report.runtime_warmup is False
     assert report.case_count == 2
     assert report.classification["accuracy"] == 1.0
     assert report.classification["macro_f1"] == 1.0
@@ -130,12 +132,16 @@ def test_benchmark_report_accepts_legacy_payload_without_manifest() -> None:
     payload.pop("schema_version")
     payload.pop("dataset_sha256")
     payload.pop("case_manifest")
+    payload.pop("execution_mode")
+    payload.pop("runtime_warmup")
 
     legacy = BenchmarkReport.model_validate(payload)
 
     assert legacy.schema_version == 1
     assert legacy.dataset_sha256 is None
     assert legacy.case_manifest == []
+    assert legacy.execution_mode == "standalone"
+    assert legacy.runtime_warmup is False
     assert legacy.provenance is None
 
 

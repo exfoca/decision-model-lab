@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 
+from decision_model_lab.battery import ResidentDecisionRunner
 from decision_model_lab.candidates import CandidateError, resolve_candidate
 from decision_model_lab.jev_style_runner import (
     DEFAULT_MODEL_ID,
@@ -143,3 +144,16 @@ def test_candidate_factory_propagates_evaluation_protocol_to_all_runners() -> No
     ):
         runner = resolve_candidate(name).create_runner(evaluation_protocol="closed-book")
         assert runner.evaluation_protocol == "closed-book"
+
+
+def test_registered_candidates_support_resident_battery_lifecycle() -> None:
+    for name in (
+        "jev-style",
+        "jev-style-2b",
+        "jev-style-2b-q4",
+        "jev-style-2b-q8",
+        "laya",
+        "tinyjev",
+        "verdict",
+    ):
+        assert isinstance(resolve_candidate(name).create_runner(), ResidentDecisionRunner)
